@@ -21,11 +21,12 @@ public class AuthController {
   private String authKey;
 
   @Autowired private UserRepository userRepository;
-
   @Autowired private PasswordEncoder passwordEncoder;
 
   // TODO : Sign in
-  public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {}
+  public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+
+  }
 
   @PostMapping("/signup")
   public ResponseEntity<?> registerAdmin(@RequestBody SignUpRequest signUpRequest) {

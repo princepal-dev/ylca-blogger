@@ -33,7 +33,7 @@ public class JwtUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-  private String getJwtFromCookie(HttpServletRequest request) {
+  public String getJwtFromCookie(HttpServletRequest request) {
     Cookie cookie = WebUtils.getCookie(request, jwtCookie);
     if (cookie != null) return cookie.getValue();
     else return null;
