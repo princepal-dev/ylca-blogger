@@ -9,6 +9,7 @@ import com.princeworks.blogger.security.request.UpdateUserDTO;
 import com.princeworks.blogger.security.response.UserCredentialsDTO;
 import com.princeworks.blogger.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
