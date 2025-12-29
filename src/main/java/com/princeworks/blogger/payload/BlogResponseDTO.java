@@ -15,29 +15,7 @@ public class BlogResponseDTO {
     private String title;
     private String description;
     private AuthorDTO author;
-    private List<ImageDTO> images;
+    private List<ImageResponseDTO> images;
     private Timestamp createdAt;
     private Timestamp updatedAt;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AuthorDTO {
-        private Long userId;
-        private String username;
-        private String fullName;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ImageDTO {
-        private Long imageId;
-        private String fileName;
-        private String fileUrl;
-        private String contentType;
-        private Long fileSize;
-        private Integer displayOrder;
-        private Timestamp createdAt;
-    }
 }

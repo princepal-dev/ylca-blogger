@@ -6,18 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ImageResponseDTO {
-    private Long imageId;
-    private String fileName;
-    private String fileUrl;
-    private String contentType;
-    private Long fileSize;
-    private Integer displayOrder;
-    private Timestamp createdAt;
-}
+
 
 @Data
 @NoArgsConstructor

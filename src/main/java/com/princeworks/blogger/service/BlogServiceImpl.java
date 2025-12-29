@@ -4,6 +4,7 @@ import com.princeworks.blogger.exceptions.BlogNotFoundException;
 import com.princeworks.blogger.exceptions.UnauthorizedAccessException;
 import com.princeworks.blogger.model.Blog;
 import com.princeworks.blogger.model.User;
+import com.princeworks.blogger.payload.AuthorDTO;
 import com.princeworks.blogger.payload.BlogResponseDTO;
 import com.princeworks.blogger.payload.CreateBlogDTO;
 import com.princeworks.blogger.payload.UpdateBlogDTO;
@@ -118,7 +119,7 @@ public class BlogServiceImpl implements BlogService {
         BlogResponseDTO dto = modelMapper.map(blog, BlogResponseDTO.class);
 
         // Manually set the author information
-        BlogResponseDTO.AuthorDTO authorDTO = new BlogResponseDTO.AuthorDTO();
+        AuthorDTO authorDTO = new AuthorDTO();
         authorDTO.setUserId(blog.getUser().getUserId());
         authorDTO.setUsername(blog.getUser().getUserName());
         authorDTO.setFullName(blog.getUser().getFullName());

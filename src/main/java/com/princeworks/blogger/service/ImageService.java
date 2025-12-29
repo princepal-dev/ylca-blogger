@@ -1,5 +1,6 @@
 package com.princeworks.blogger.service;
 
+import com.princeworks.blogger.payload.BlogResponseDTO;
 import com.princeworks.blogger.payload.ImageResponseDTO;
 import com.princeworks.blogger.payload.ImageUploadDTO;
 import org.springframework.web.multipart.MultipartFile;

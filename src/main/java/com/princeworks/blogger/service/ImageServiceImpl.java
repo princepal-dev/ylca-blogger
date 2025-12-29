@@ -5,6 +5,7 @@ import com.princeworks.blogger.exceptions.UnauthorizedAccessException;
 import com.princeworks.blogger.model.Blog;
 import com.princeworks.blogger.model.Image;
 import com.princeworks.blogger.model.User;
+import com.princeworks.blogger.payload.BlogResponseDTO;
 import com.princeworks.blogger.payload.ImageResponseDTO;
 import com.princeworks.blogger.payload.ImageUploadDTO;
 import com.princeworks.blogger.repositories.BlogRepository;
