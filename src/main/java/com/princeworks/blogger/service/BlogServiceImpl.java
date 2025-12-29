@@ -10,6 +10,7 @@ import com.princeworks.blogger.payload.CreateBlogDTO;
 import com.princeworks.blogger.payload.UpdateBlogDTO;
 import com.princeworks.blogger.repositories.BlogRepository;
 import com.princeworks.blogger.util.AuthUtil;
+import com.princeworks.blogger.util.HtmlSanitizer;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,9 @@ public class BlogServiceImpl implements BlogService {
     private AuthUtil authUtil;
 
     @Autowired
+    private HtmlSanitizer htmlSanitizer;
+
+    @Autowired
     private ModelMapper modelMapper;
 
     @Override
@@ -38,7 +42,7 @@ public class BlogServiceImpl implements BlogService {
 
         Blog blog = new Blog();
         blog.setTitle(createBlogDTO.getTitle());
-        blog.setDescription(createBlogDTO.getDescription());
+        blog.setDescription(htmlSanitizer.sanitize(createBlogDTO.getDescription()));
         blog.setUser(currentUser);
 
         Blog savedBlog = blogRepository.save(blog);
@@ -90,7 +94,7 @@ public class BlogServiceImpl implements BlogService {
         }
 
         existingBlog.setTitle(updateBlogDTO.getTitle());
-        existingBlog.setDescription(updateBlogDTO.getDescription());
+        existingBlog.setDescription(htmlSanitizer.sanitize(updateBlogDTO.getDescription()));
 
         Blog updatedBlog = blogRepository.save(existingBlog);
         return mapToBlogResponseDTO(updatedBlog);

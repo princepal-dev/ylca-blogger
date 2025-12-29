@@ -19,12 +19,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
   @Autowired private AuthEntryPointJwt unauthorizedHandler;
   @Autowired private UserDetailsServiceImpl userDetailsService;
+
+  @Value("${cors.max-age}")
+  private long corsMaxAge;
 
   @Bean
   public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -51,15 +57,41 @@ public class WebSecurityConfig {
   }
 
   @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://ylca-admin.vercel.app",
+        "https://ylca-cybersecurity.vercel.app"
+    ));
+    configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+    configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+    configuration.setAllowCredentials(true);
+    configuration.setMaxAge(corsMaxAge);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/api/**", configuration);
+    return source;
+  }
+
+  @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/**")
+                auth.requestMatchers("/api/auth/signin", "/api/auth/signup", "/api/auth/me")
                     .permitAll()
+                    .requestMatchers("/api/blogs/**")
+                    .permitAll()
+                    .requestMatchers("/api/auth/users/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers("/api/auth/profile")
+                    .authenticated()
                     .requestMatchers("/h2-console/**")
                     .permitAll()
                     .requestMatchers("/v3/api-docs/**")

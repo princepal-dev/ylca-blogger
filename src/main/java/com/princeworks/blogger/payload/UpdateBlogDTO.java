@@ -1,5 +1,6 @@
 package com.princeworks.blogger.payload;
 
+import com.princeworks.blogger.validation.HtmlContentSize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -11,6 +12,6 @@ public class UpdateBlogDTO {
     private String title;
 
     @NotBlank(message = "Description is required")
-    @Size(min = 150, message = "Description must be at least 150 characters")
+    @HtmlContentSize(min = 150, message = "Description must be at least 150 characters (excluding HTML tags)")
     private String description;
 }

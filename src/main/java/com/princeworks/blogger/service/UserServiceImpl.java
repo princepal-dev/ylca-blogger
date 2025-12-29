@@ -26,9 +26,13 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private AuthUtil authUtil;
 
+    @Value("${user.generation.username.length}")
+    private int usernameLength;
+
+    @Value("${user.generation.password.length}")
+    private int passwordLength;
+
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int USERNAME_LENGTH = 8;
-    private static final int PASSWORD_LENGTH = 12;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
@@ -43,11 +47,11 @@ public class UserServiceImpl implements UserService {
         // Generate unique username
         String username;
         do {
-            username = generateRandomString(USERNAME_LENGTH);
+            username = generateRandomString(usernameLength);
         } while (userRepository.existsByUserName(username));
 
         // Generate random password
-        String password = generateRandomString(PASSWORD_LENGTH);
+        String password = generateRandomString(passwordLength);
 
         // Create user
         User user = new User();
@@ -81,6 +85,15 @@ public class UserServiceImpl implements UserService {
         }
         if (updateUserDTO.getPhoneNumber() != null) {
             user.setPhoneNumber(updateUserDTO.getPhoneNumber());
+        }
+
+        // Only admins can update roles, and prevent admins from removing their own admin privileges
+        if (updateUserDTO.getRole() != null && currentUser.getRole().equals(AppRole.ROLE_ADMIN)) {
+            // Prevent admin from removing their own admin privileges
+            if (currentUser.getUserId().equals(userId) && !updateUserDTO.getRole().equals(AppRole.ROLE_ADMIN)) {
+                throw new UnauthorizedAccessException("You cannot remove your own admin privileges");
+            }
+            user.setRole(updateUserDTO.getRole());
         }
 
         return userRepository.save(user);

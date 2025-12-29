@@ -26,7 +26,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -50,11 +52,16 @@ public class AuthController {
 
       UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
+      // Fetch the full user entity to get createdAt
+      User user = userRepository.findById(userDetails.getId())
+          .orElseThrow(() -> new RuntimeException("User not found"));
+
       ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
+      String jwtToken = jwtUtils.generateTokenFromUsername(userDetails.getUsername());
 
       return ResponseEntity.ok()
           .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-          .body(new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), userDetails.getAuthorities().iterator().next().getAuthority()));
+          .body(new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), userDetails.getAuthorities().iterator().next().getAuthority(), jwtToken, user.getCreatedAt()));
     } catch (Exception e) {
       return ResponseEntity.badRequest()
           .body(new MessageResponse("Error: Invalid username or password"));
@@ -94,7 +101,7 @@ public class AuthController {
   public ResponseEntity<?> updateUser(@PathVariable Long userId, @Valid @RequestBody UpdateUserDTO updateUserDTO) {
     try {
       User updatedUser = userService.updateUser(userId, updateUserDTO);
-      return ResponseEntity.ok(new UserInfoResponse(updatedUser.getUserId(), updatedUser.getUserName(), updatedUser.getRole().name()));
+      return ResponseEntity.ok(new UserInfoResponse(updatedUser.getUserId(), updatedUser.getUserName(), updatedUser.getRole().name(), null, updatedUser.getCreatedAt()));
     } catch (Exception e) {
       return ResponseEntity.badRequest()
           .body(new MessageResponse("Error: " + e.getMessage()));
@@ -105,7 +112,7 @@ public class AuthController {
   public ResponseEntity<?> updateOwnProfile(@Valid @RequestBody UpdateUserDTO updateUserDTO) {
     try {
       User updatedUser = userService.updateOwnProfile(updateUserDTO);
-      return ResponseEntity.ok(new UserInfoResponse(updatedUser.getUserId(), updatedUser.getUserName(), updatedUser.getRole().name()));
+      return ResponseEntity.ok(new UserInfoResponse(updatedUser.getUserId(), updatedUser.getUserName(), updatedUser.getRole().name(), null, updatedUser.getCreatedAt()));
     } catch (Exception e) {
       return ResponseEntity.badRequest()
           .body(new MessageResponse("Error: " + e.getMessage()));
@@ -120,6 +127,62 @@ public class AuthController {
     } catch (Exception e) {
       return ResponseEntity.badRequest()
           .body(new MessageResponse("Error: " + e.getMessage()));
+    }
+  }
+
+  @GetMapping("/users")
+  public ResponseEntity<?> getAllUsers() {
+    try {
+      List<User> users = userRepository.findAll();
+      List<UserInfoResponse> userResponses = users.stream()
+          .map(user -> new UserInfoResponse(
+              user.getUserId(),
+              user.getUserName(),
+              user.getRole().name(),
+              null, // no token for users list
+              user.getCreatedAt()
+          ))
+          .collect(Collectors.toList());
+
+      return ResponseEntity.ok(userResponses);
+    } catch (Exception e) {
+      return ResponseEntity.status(500).body(new MessageResponse("Error: " + e.getMessage()));
+    }
+  }
+
+  @GetMapping("/me")
+  public ResponseEntity<?> getCurrentUser() {
+    try {
+      // Get the current authenticated user
+      Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+      if (authentication == null || !authentication.isAuthenticated()) {
+        System.out.println("AuthController - No authentication found");
+        return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
+      }
+
+      UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+      System.out.println("AuthController - Current user: " + userDetails.getUsername() +
+                        ", Roles: " + userDetails.getAuthorities());
+
+      // Fetch the full user entity to get createdAt
+      User user = userRepository.findById(userDetails.getId())
+          .orElseThrow(() -> new RuntimeException("User not found"));
+
+      UserInfoResponse response = new UserInfoResponse(
+          userDetails.getId(),
+          userDetails.getUsername(),
+          userDetails.getAuthorities().iterator().next().getAuthority(),
+          null, // no token for /me endpoint
+          user.getCreatedAt()
+      );
+
+      System.out.println("AuthController - Returning user data: " + response.getUsername());
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      System.err.println("AuthController - Error getting current user: " + e.getMessage());
+      e.printStackTrace();
+      return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
     }
   }
 

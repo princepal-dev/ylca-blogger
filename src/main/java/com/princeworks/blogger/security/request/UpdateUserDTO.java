@@ -1,5 +1,6 @@
 package com.princeworks.blogger.security.request;
 
+import com.princeworks.blogger.model.AppRole;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -10,4 +11,6 @@ public class UpdateUserDTO {
 
     @Size(max = 10, message = "Phone number must be maximum 10 characters")
     private String phoneNumber;
+
+    private AppRole role;
 }

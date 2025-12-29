@@ -33,8 +33,12 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     try {
       String jwt = parseJwt(request);
+      logger.debug("Parsed JWT: {}", jwt != null ? jwt.substring(0, Math.min(20, jwt.length())) + "..." : "null");
+
       if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
         String username = jwtUtils.getUserNameFromJWTToken(jwt);
+        logger.debug("Username from JWT: {}", username);
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         UsernamePasswordAuthenticationToken authentication =
@@ -43,7 +47,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        logger.debug("Roles from JWT: {}", userDetails.getAuthorities());
+        logger.debug("Authentication set for user: {} with roles: {}", username, userDetails.getAuthorities());
+      } else {
+        logger.debug("JWT is null or invalid");
       }
     } catch (Exception e) {
       logger.error("Cannot set user authentication: {}", e.getMessage());
@@ -52,6 +58,13 @@ public class AuthTokenFilter extends OncePerRequestFilter {
   }
 
   private String parseJwt(HttpServletRequest request) {
+    // First try to get JWT from Authorization header
+    String headerAuth = request.getHeader("Authorization");
+    if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+      return headerAuth.substring(7); // Remove "Bearer " prefix
+    }
+
+    // Fallback to cookie if no Authorization header
     return jwtUtils.getJwtFromCookie(request);
   }
 }
