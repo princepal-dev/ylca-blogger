@@ -4,6 +4,7 @@ import com.princeworks.blogger.security.jwt.AuthEntryPointJwt;
 import com.princeworks.blogger.security.jwt.AuthTokenFilter;
 import com.princeworks.blogger.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class WebSecurityConfig {
   @Autowired private AuthEntryPointJwt unauthorizedHandler;
   @Autowired private UserDetailsServiceImpl userDetailsService;
+
+  @Value("${cors.allowed-origins}")
+  private String[] corsAllowedOrigins;
+
+  @Value("${cors.allowed-methods}")
+  private String[] corsAllowedMethods;
+
+  @Value("${cors.allowed-headers}")
+  private String[] corsAllowedHeaders;
+
+  @Value("${cors.allow-credentials}")
+  private boolean corsAllowCredentials;
 
   @Value("${cors.max-age}")
   private long corsMaxAge;
@@ -59,15 +72,10 @@ public class WebSecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://ylca-admin.vercel.app",
-        "https://ylca-cybersecurity.vercel.app"
-    ));
-    configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-    configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
-    configuration.setAllowCredentials(true);
+    configuration.setAllowedOriginPatterns(java.util.Arrays.asList(corsAllowedOrigins));
+    configuration.setAllowedMethods(java.util.Arrays.asList(corsAllowedMethods));
+    configuration.setAllowedHeaders(java.util.Arrays.asList(corsAllowedHeaders));
+    configuration.setAllowCredentials(corsAllowCredentials);
     configuration.setMaxAge(corsMaxAge);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
