@@ -10,8 +10,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Entity
@@ -27,18 +25,21 @@ public class Blog {
     @Size(min = 10)
     private String title;
 
-    @NotBlank
-    @Size(min = 150)
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    // PDF file path
+    private String pdfPath;
+
+    // Custom author information
+    @Size(max = 100)
+    private String authorName;
+
+    private String authorImage;
+
+    @Size(max = 100)
+    private String authorTitle;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User user;
-
-    @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OrderBy("displayOrder ASC, createdAt ASC")
-    private List<Image> images = new ArrayList<>();
 
     @Column(updatable = false)
     @CreationTimestamp

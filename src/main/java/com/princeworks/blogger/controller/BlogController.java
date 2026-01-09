@@ -4,11 +4,8 @@ import com.princeworks.blogger.exceptions.BlogNotFoundException;
 import com.princeworks.blogger.exceptions.UnauthorizedAccessException;
 import com.princeworks.blogger.payload.BlogResponseDTO;
 import com.princeworks.blogger.payload.CreateBlogDTO;
-import com.princeworks.blogger.payload.ImageResponseDTO;
-import com.princeworks.blogger.payload.ImageUploadDTO;
 import com.princeworks.blogger.payload.UpdateBlogDTO;
 import com.princeworks.blogger.service.BlogService;
-import com.princeworks.blogger.service.ImageService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/blogs")
@@ -25,9 +21,6 @@ public class BlogController {
 
     @Autowired
     private BlogService blogService;
-
-    @Autowired
-    private ImageService imageService;
 
     @PostMapping
     public ResponseEntity<BlogResponseDTO> createBlog(@Valid @RequestBody CreateBlogDTO createBlogDTO) {
@@ -93,109 +86,95 @@ public class BlogController {
         }
     }
 
-    // Image-related endpoints
-
-    @PostMapping("/{blogId}/images")
-    public ResponseEntity<ImageResponseDTO> uploadImage(
-            @PathVariable Long blogId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "displayOrder", required = false, defaultValue = "0") Integer displayOrder) {
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAllBlogs() {
         try {
-            ImageUploadDTO uploadDTO = new ImageUploadDTO();
-            uploadDTO.setDisplayOrder(displayOrder);
-
-            ImageResponseDTO uploadedImage = imageService.uploadImage(blogId, file, uploadDTO);
-            return new ResponseEntity<>(uploadedImage, HttpStatus.CREATED);
-        } catch (BlogNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (UnauthorizedAccessException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @PostMapping("/{blogId}/images/multiple")
-    public ResponseEntity<List<ImageResponseDTO>> uploadMultipleImages(
-            @PathVariable Long blogId,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestParam(value = "displayOrders", required = false) List<Integer> displayOrders) {
-        try {
-            List<ImageUploadDTO> uploadDTOs = null;
-            if (displayOrders != null && !displayOrders.isEmpty()) {
-                uploadDTOs = displayOrders.stream()
-                        .map(order -> {
-                            ImageUploadDTO dto = new ImageUploadDTO();
-                            dto.setDisplayOrder(order);
-                            return dto;
-                        })
-                        .collect(Collectors.toList());
-            }
-
-            List<ImageResponseDTO> uploadedImages = imageService.uploadMultipleImages(blogId, files, uploadDTOs);
-            return new ResponseEntity<>(uploadedImages, HttpStatus.CREATED);
-        } catch (BlogNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (UnauthorizedAccessException e) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/{blogId}/images")
-    public ResponseEntity<List<ImageResponseDTO>> getBlogImages(@PathVariable Long blogId) {
-        try {
-            List<ImageResponseDTO> images = imageService.getImagesByBlogId(blogId);
-            return ResponseEntity.ok(images);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/images/{imageId}")
-    public ResponseEntity<ImageResponseDTO> getImage(@PathVariable Long imageId) {
-        try {
-            ImageResponseDTO image = imageService.getImageById(imageId);
-            return ResponseEntity.ok(image);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @DeleteMapping("/images/{imageId}")
-    public ResponseEntity<Void> deleteImage(@PathVariable Long imageId) {
-        try {
-            imageService.deleteImage(imageId);
+            blogService.deleteAllBlogs();
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("not found")) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            } else if (e.getMessage().contains("only delete")) {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-            }
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (UnauthorizedAccessException e) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @PutMapping("/images/{imageId}/order")
-    public ResponseEntity<Void> updateImageOrder(
-            @PathVariable Long imageId,
-            @RequestParam("displayOrder") Integer displayOrder) {
+    // PDF-related endpoints
+
+    @PostMapping("/{blogId}/pdf")
+    public ResponseEntity<?> uploadPdf(
+            @PathVariable Long blogId,
+            @RequestParam("file") MultipartFile file) {
         try {
-            imageService.updateImageOrder(imageId, displayOrder);
-            return ResponseEntity.ok().build();
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("not found")) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            } else if (e.getMessage().contains("only update")) {
-                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(new com.princeworks.blogger.security.response.MessageResponse("Error: PDF file is required"));
             }
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            
+            String pdfPath = blogService.uploadPdf(blogId, file);
+            return ResponseEntity.ok()
+                .body(new java.util.HashMap<String, String>() {{
+                    put("message", "PDF uploaded successfully");
+                    put("pdfPath", pdfPath);
+                }});
+        } catch (BlogNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (UnauthorizedAccessException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the full stack trace for debugging
+            System.err.println("PDF Upload Error - Blog ID: " + blogId);
+            System.err.println("Error Message: " + e.getMessage());
+            System.err.println("Error Class: " + e.getClass().getName());
+            if (e.getCause() != null) {
+                System.err.println("Cause: " + e.getCause().getMessage());
+                e.getCause().printStackTrace();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: Failed to upload PDF - " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{blogId}/author-image")
+    public ResponseEntity<?> uploadAuthorImage(
+            @PathVariable Long blogId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(new com.princeworks.blogger.security.response.MessageResponse("Error: Author image file is required"));
+            }
+            
+            String imagePath = blogService.uploadAuthorImage(blogId, file);
+            return ResponseEntity.ok()
+                .body(new java.util.HashMap<String, String>() {{
+                    put("message", "Author image uploaded successfully");
+                    put("imagePath", imagePath);
+                }});
+        } catch (BlogNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (UnauthorizedAccessException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: " + e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the full stack trace for debugging
+            System.err.println("Author Image Upload Error - Blog ID: " + blogId);
+            System.err.println("Error Message: " + e.getMessage());
+            System.err.println("Error Class: " + e.getClass().getName());
+            if (e.getCause() != null) {
+                System.err.println("Cause: " + e.getCause().getMessage());
+                e.getCause().printStackTrace();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new com.princeworks.blogger.security.response.MessageResponse("Error: Failed to upload author image - " + e.getMessage()));
         }
     }
 }

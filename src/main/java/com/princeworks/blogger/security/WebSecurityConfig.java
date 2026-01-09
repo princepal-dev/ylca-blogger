@@ -20,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.HeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,6 +30,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class WebSecurityConfig {
   @Autowired private AuthEntryPointJwt unauthorizedHandler;
   @Autowired private UserDetailsServiceImpl userDetailsService;
+  @Autowired private FrameOptionsRemovalFilter frameOptionsRemovalFilter;
 
   @Value("${cors.allowed-origins}")
   private String[] corsAllowedOrigins;
@@ -110,14 +112,20 @@ public class WebSecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/test/**")
                     .permitAll()
-                    .requestMatchers("/images/**")
+                    .requestMatchers("/pdfs/**")
+                    .permitAll()
+                    .requestMatchers("/author-images/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated());
     http.authenticationProvider(authenticationProvider());
     http.addFilterBefore(
         authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+    // Disable default frame options - we'll handle it in the filter
+    http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
+    // Add filter at the end to intercept X-Frame-Options for PDFs/images
+    // The response wrapper will intercept header setting from Spring Security's header writers
+    http.addFilterAfter(frameOptionsRemovalFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 

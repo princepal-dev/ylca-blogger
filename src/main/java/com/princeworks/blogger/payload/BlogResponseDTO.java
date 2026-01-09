@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,9 +12,11 @@ import java.util.List;
 public class BlogResponseDTO {
     private Long blogId;
     private String title;
-    private String description;
+    private String pdfPath;
+    private String authorName;
+    private String authorImage;
+    private String authorTitle;
     private AuthorDTO author;
-    private List<ImageResponseDTO> images;
     private Timestamp createdAt;
     private Timestamp updatedAt;
 }

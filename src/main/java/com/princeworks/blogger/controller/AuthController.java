@@ -161,7 +161,14 @@ public class AuthController {
         return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
       }
 
-      UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+      // Check if principal is UserDetailsImpl (not anonymous user)
+      Object principal = authentication.getPrincipal();
+      if (!(principal instanceof UserDetailsImpl)) {
+        System.out.println("AuthController - Principal is not UserDetailsImpl: " + principal.getClass().getName());
+        return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
+      }
+
+      UserDetailsImpl userDetails = (UserDetailsImpl) principal;
       System.out.println("AuthController - Current user: " + userDetails.getUsername() +
                         ", Roles: " + userDetails.getAuthorities());
 
