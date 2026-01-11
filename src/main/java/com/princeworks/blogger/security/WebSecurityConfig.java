@@ -80,8 +80,18 @@ public class WebSecurityConfig {
     configuration.setAllowCredentials(corsAllowCredentials);
     configuration.setMaxAge(corsMaxAge);
 
+    // Configuration for static resources (PDFs and images) - only GET methods
+    CorsConfiguration staticResourceConfig = new CorsConfiguration();
+    staticResourceConfig.setAllowedOriginPatterns(java.util.Arrays.asList(corsAllowedOrigins));
+    staticResourceConfig.setAllowedMethods(java.util.Arrays.asList("GET", "HEAD", "OPTIONS"));
+    staticResourceConfig.setAllowedHeaders(java.util.Arrays.asList(corsAllowedHeaders));
+    staticResourceConfig.setAllowCredentials(corsAllowCredentials);
+    staticResourceConfig.setMaxAge(corsMaxAge);
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/api/**", configuration);
+    source.registerCorsConfiguration("/pdfs/**", staticResourceConfig);
+    source.registerCorsConfiguration("/author-images/**", staticResourceConfig);
     return source;
   }
 

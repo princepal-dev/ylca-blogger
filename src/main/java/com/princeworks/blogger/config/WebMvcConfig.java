@@ -44,9 +44,25 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        // CORS for API endpoints
         registry.addMapping("/api/**")
                 .allowedOrigins(allowedOrigins)
                 .allowedMethods(allowedMethods)
+                .allowedHeaders(allowedHeaders)
+                .allowCredentials(allowCredentials)
+                .maxAge(maxAge);
+        
+        // CORS for static resources (PDFs and author images)
+        registry.addMapping("/pdfs/**")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods("GET", "HEAD", "OPTIONS")
+                .allowedHeaders(allowedHeaders)
+                .allowCredentials(allowCredentials)
+                .maxAge(maxAge);
+        
+        registry.addMapping("/author-images/**")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods("GET", "HEAD", "OPTIONS")
                 .allowedHeaders(allowedHeaders)
                 .allowCredentials(allowCredentials)
                 .maxAge(maxAge);
